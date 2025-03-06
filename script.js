@@ -52,75 +52,79 @@ function deleteLetter () {
     nextLetter -= 1
 }
 
-function checkGuess () {
-    let row = document.getElementsByClassName("letter-row")[6 - guessesRemaining]
-    let guessString = ''
-    let rightGuess = Array.from(rightGuessString)
+function checkGuess() {
+    let row = document.getElementsByClassName("letter-row")[6 - guessesRemaining];
+    let guessString = '';
+    let rightGuess = Array.from(rightGuessString);
 
     for (const val of currentGuess) {
-        guessString += val
+        guessString += val;
     }
 
     if (guessString.length != 5) {
-        toastr.error("Not enough letters!")
-        return
+        toastr.error("Not enough letters!");
+        return;
     }
 
     if (!WORDS.includes(guessString)) {
-        toastr.error("Word not in list!")
-        return
+        toastr.error("Word not in list!");
+        return;
     }
 
-    
+    // Create frequency count for rightGuessString
+    let letterCount = {};
+    for (const letter of rightGuess) {
+        letterCount[letter] = (letterCount[letter] || 0) + 1;
+    }
+
+    let letterColors = Array(5).fill('grey'); // Default all to grey
+
+    // First pass: check for green letters
     for (let i = 0; i < 5; i++) {
-        let letterColor = ''
-        let box = row.children[i]
-        let letter = currentGuess[i]
-        
-        let letterPosition = rightGuess.indexOf(currentGuess[i])
-        // is letter in the correct guess
-        if (letterPosition === -1) {
-            letterColor = 'grey'
-        } else {
-            // now, letter is definitely in word
-            // if letter index and right guess index are the same
-            // letter is in the right position 
-            if (currentGuess[i] === rightGuess[i]) {
-                // shade green 
-                letterColor = 'green'
-            } else {
-                // shade box yellow
-                letterColor = 'yellow'
-            }
-
-            rightGuess[letterPosition] = "#"
+        if (currentGuess[i] === rightGuess[i]) {
+            letterColors[i] = 'green';
+            letterCount[currentGuess[i]] -= 1;
         }
+    }
 
-        let delay = 250 * i
-        setTimeout(()=> {
-            //flip box
-            animateCSS(box, 'flipInX')
-            //shade box
-            box.style.backgroundColor = letterColor
-            shadeKeyBoard(letter, letterColor)
-        }, delay)
+    // Second pass: check for yellow letters
+    for (let i = 0; i < 5; i++) {
+        if (letterColors[i] !== 'green') { // Skip already green letters
+            let letter = currentGuess[i];
+            if (rightGuess.includes(letter) && letterCount[letter] > 0) {
+                letterColors[i] = 'yellow';
+                letterCount[letter] -= 1;
+            }
+        }
+    }
+
+    // Apply colors with delay
+    for (let i = 0; i < 5; i++) {
+        let box = row.children[i];
+        let delay = 250 * i;
+        setTimeout(() => {
+            animateCSS(box, 'flipInX');
+            box.style.backgroundColor = letterColors[i];
+            shadeKeyBoard(currentGuess[i], letterColors[i]);
+        }, delay);
     }
 
     if (guessString === rightGuessString) {
-        toastr.success("You guessed right! Game over!")
-        guessesRemaining = 0
-        return
+        toastr.success("You guessed right! Game over!");
+        guessesRemaining = 0;
+        return;
     } else {
         guessesRemaining -= 1;
         currentGuess = [];
         nextLetter = 0;
 
         if (guessesRemaining === 0) {
-            toastr.error("You've run out of guesses! Game over!")
-            toastr.info(`The right word was: "${rightGuessString}"`)
+            toastr.error("You've run out of guesses! Game over!");
+            toastr.info(`The right word was: "${rightGuessString}"`);
         }
     }
 }
+
 
 function insertLetter (pressedKey) {
     if (nextLetter === 5) {
